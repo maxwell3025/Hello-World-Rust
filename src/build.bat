@@ -1,0 +1,1 @@
+rustc -o ../build/a.exe  hello-world.rs
