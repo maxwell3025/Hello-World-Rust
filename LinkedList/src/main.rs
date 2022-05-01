@@ -1,53 +1,59 @@
 use std::fmt;
-use std::ptr;
 
-struct Node{
-	next: *mut Node,
-	value: i32
+struct Node<T>{
+	next: Option<Box<Node<T>>>,
+	data: T
 }
 
-impl fmt::Display for Node{
-    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        write!(f, "{}", self.value)
-    }
+struct List<T>{
+	head: Option<Box<Node<T>>>
 }
 
-struct LinkedList{
-	head: *mut Node,
-	length: i32
-}
-
-impl LinkedList{
-	fn new() -> LinkedList{
-		LinkedList{head: ptr::null::<Node>() as *mut Node, length:0}
+impl<T> List<T>{
+	fn new() -> Self{
+		return List{head: None}
 	}
-	fn push(&mut self, value:i32){
-			let new_node: *mut Node = Box::into_raw(Box::<Node>::new(Node{next: self.head, value: value}));//pointer to new head
-			self.head = new_node;
-			self.length+=1;
+
+	fn push(&mut self, data: T){
+		let old_head = self.head.take();
+		self.head = Some(Box::new(Node{next: old_head, data: data}));
 	}
-	fn peek(&self, index:i32) -> i32{
-		if index >= self.length || index < 0{
-			panic!("index out of bounds: {}", index);
+
+	fn pop(&mut self) -> Option<T>{
+		match self.head.take(){
+			Some(head)=>{
+				self.head = (*head).next;
+				Some((*head).data)
+			},
+			None=>{
+				None
+			},
 		}
-		unsafe{
-			let mut current_node = self.head;
-			for _i in 0..index{
-				current_node = (*current_node).next;
+	}
+}
+
+impl<T: Copy> List<T>{
+	fn peek(&self) -> Option<T>{
+		match &self.head{
+			Some(head)=>{
+				Some(head.data)
+			},
+			None=>{
+				None
 			}
-			(*current_node).value
 		}
 	}
 }
-
-impl fmt::Display for LinkedList{
+impl<T: fmt::Display> fmt::Display for List<T>{
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         let mut out = "[".to_owned();
-        for _i in 0..self.length{
-        	if _i != 0{
-        		out += " -> ";
-        	}
-        	out += format!("{}", self.peek(_i)).as_str();
+		let mut next = &self.head;
+        while let Some(node) = next{
+        	out += format!("{}", node.data).as_str();
+			next = &node.next;
+			if !matches!(next, None){
+				out += "->"
+			}
         }
         out += "]";
         write!(f, "{}", out)
@@ -55,9 +61,12 @@ impl fmt::Display for LinkedList{
 }
 
 fn main() {
-	let mut LL = LinkedList::new();
-	LL.push(1);
-	LL.push(2);
-	LL.push(3);
-    println!("The list is: {}", LL);
+	let mut ll = List::new();
+	ll.push(1);
+	ll.push(2);
+	ll.push(3);
+    println!("The list is: {}", ll);
+	if let Some(x) = ll.peek(){
+		println!("{}", x);
+	}
 }
